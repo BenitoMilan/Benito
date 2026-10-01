@@ -1,1 +1,315 @@
-test
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wat gaan we doen?</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #17172a, #30305c);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: white;
+}
+
+h1 {
+  margin: 0 0 30px;
+  text-align: center;
+  font-size: 32px;
+}
+
+.container {
+  position: relative;
+  width: min(88vw, 430px);
+  aspect-ratio: 1;
+}
+
+.pointer {
+  position: absolute;
+  z-index: 10;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 22px solid transparent;
+  border-right: 22px solid transparent;
+  border-top: 48px solid white;
+}
+
+#wheel {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  filter: drop-shadow(0 15px 18px rgba(0,0,0,.4));
+}
+
+button {
+  margin-top: 38px;
+  padding: 17px 38px;
+  border: none;
+  border-radius: 50px;
+  background: white;
+  color: #20203d;
+  font-size: 19px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(0,0,0,.3);
+}
+
+button:active {
+  transform: scale(.95);
+}
+
+button:disabled {
+  opacity: .6;
+}
+
+#result {
+  min-height: 40px;
+  margin-top: 22px;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎡 Wat gaan we doen?</h1>
+
+<div class="container">
+  <div class="pointer"></div>
+  <svg id="wheel" viewBox="0 0 400 400"></svg>
+</div>
+
+<button id="spinButton">DRAAI HET RAD!</button>
+
+<div id="result"></div>
+
+<script>
+
+const options = [
+  "Bioscoop en Koken",
+  "Bowlen en Sushi",
+  "Film thuis en koken",
+  "Niet afspreken",
+  "Draai nog een keer!"
+];
+
+const colors = [
+  "#ff5d73",
+  "#5b8cff",
+  "#45c98f",
+  "#f5b642",
+  "#a66cff"
+];
+
+const svg = document.getElementById("wheel");
+const NS = "http://www.w3.org/2000/svg";
+
+function polar(angle, radius = 190) {
+  const a = (angle - 90) * Math.PI / 180;
+
+  return [
+    200 + radius * Math.cos(a),
+    200 + radius * Math.sin(a)
+  ];
+}
+
+for (let i = 0; i < 5; i++) {
+
+  const start = i * 72;
+  const end = (i + 1) * 72;
+
+  const p1 = polar(start);
+  const p2 = polar(end);
+
+  const path = document.createElementNS(NS, "path");
+
+  path.setAttribute(
+    "d",
+    `M200 200
+     L${p1[0]} ${p1[1]}
+     A190 190 0 0 1 ${p2[0]} ${p2[1]}
+     Z`
+  );
+
+  path.setAttribute("fill", colors[i]);
+  path.setAttribute("stroke", "white");
+  path.setAttribute("stroke-width", "4");
+
+  svg.appendChild(path);
+
+  const middle = start + 36;
+  const pos = polar(middle, 120);
+
+  const text = document.createElementNS(NS, "text");
+
+  text.setAttribute("x", pos[0]);
+  text.setAttribute("y", pos[1] - 10);
+  text.setAttribute("fill", "white");
+  text.setAttribute("font-size", "16");
+  text.setAttribute("font-weight", "800");
+  text.setAttribute("text-anchor", "middle");
+
+  let lines;
+
+  if (i === 0) lines = ["Bioscoop", "en Koken"];
+  if (i === 1) lines = ["Bowlen", "en Sushi"];
+  if (i === 2) lines = ["Film thuis", "en koken"];
+  if (i === 3) lines = ["Niet", "afspreken"];
+  if (i === 4) lines = ["Draai nog", "een keer!"];
+
+  lines.forEach((line, j) => {
+
+    const span = document.createElementNS(NS, "tspan");
+
+    span.setAttribute("x", pos[0]);
+    span.setAttribute("dy", j === 0 ? 0 : 20);
+
+    span.textContent = line;
+
+    text.appendChild(span);
+  });
+
+  svg.appendChild(text);
+}
+
+const border = document.createElementNS(NS, "circle");
+
+border.setAttribute("cx", "200");
+border.setAttribute("cy", "200");
+border.setAttribute("r", "190");
+border.setAttribute("fill", "none");
+border.setAttribute("stroke", "white");
+border.setAttribute("stroke-width", "8");
+
+svg.appendChild(border);
+
+const center = document.createElementNS(NS, "circle");
+
+center.setAttribute("cx", "200");
+center.setAttribute("cy", "200");
+center.setAttribute("r", "30");
+center.setAttribute("fill", "white");
+
+svg.appendChild(center);
+
+
+let rotation = 0;
+let spinning = false;
+
+const button = document.getElementById("spinButton");
+const result = document.getElementById("result");
+
+
+function spin(autoSpin = false) {
+
+  if (spinning) return;
+
+  spinning = true;
+  button.disabled = true;
+
+  if (!autoSpin) {
+    result.textContent = "";
+  }
+
+  const winner = Math.floor(Math.random() * 5);
+
+  const sectionCenter = winner * 72 + 36;
+
+  const current =
+    ((rotation % 360) + 360) % 360;
+
+  const desired =
+    (360 - sectionCenter) % 360;
+
+  const difference =
+    (desired - current + 360) % 360;
+
+  const startRotation = rotation;
+
+  const extraSpins =
+    6 + Math.floor(Math.random() * 3);
+
+  const target =
+    rotation +
+    extraSpins * 360 +
+    difference;
+
+  const duration = 4500;
+
+  let startTime = null;
+
+
+  function animate(time) {
+
+    if (!startTime) {
+      startTime = time;
+    }
+
+    const progress =
+      Math.min((time - startTime) / duration, 1);
+
+    const easing =
+      1 - Math.pow(1 - progress, 3);
+
+    rotation =
+      startRotation +
+      (target - startRotation) * easing;
+
+    svg.style.transform =
+      `rotate(${rotation}deg)`;
+
+
+    if (progress < 1) {
+
+      requestAnimationFrame(animate);
+
+    } else {
+
+      rotation = target;
+      spinning = false;
+
+      if (winner === 4) {
+
+        result.textContent =
+          "🔄 Draai nog een keer!";
+
+        setTimeout(() => {
+          spin(true);
+        }, 1000);
+
+      } else {
+
+        result.textContent =
+          "🎉 " + options[winner] + "!";
+
+        button.disabled = false;
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+
+button.addEventListener("click", () => {
+  spin(false);
+});
+
+</script>
+
+</body>
+</html>
